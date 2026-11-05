@@ -1,0 +1,16 @@
+{
+  "Oyuncu 1": {
+    "name": "Oyuncu 1",
+    "elo": 1000,
+    "wins": 0,
+    "losses": 0,
+    "goals": 0
+  },
+  "toprak": {
+    "name": "toprak",
+    "elo": 968,
+    "wins": 1,
+    "losses": 3,
+    "goals": 4
+  }
+}

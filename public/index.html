@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Haxball Pro Arena - Multiplayer & ELO</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- GENEL ARENA DÜZENİ (SAHA SOLDA, PANEL SAĞDA) -->
+  <div id="arena-layout">
+    
+    <!-- SOL: OYUN ALANI -->
+    <main id="game-main">
+      <!-- ÜST SKOR TABLOSU -->
+      <header id="scoreboard">
+        <div class="team-card red-team">
+          <div class="team-badge">KIRMIZI</div>
+          <div class="team-score" id="red-score">0</div>
+        </div>
+
+        <div class="match-info">
+          <div id="match-status" class="status-badge waiting">HAZIRLIK</div>
+          <div id="match-timer" class="timer-display">00:00</div>
+          <div class="match-rule-hint" id="rule-hint">Hedef: 3 Gol | 3 Dk | Botlar: Açık</div>
+        </div>
+
+        <div class="team-card blue-team">
+          <div class="team-score" id="blue-score">0</div>
+          <div class="team-badge">MAVİ</div>
+        </div>
+      </header>
+
+      <!-- SAHA ALANI (CANVAS - TAMAMEN TEMİZ VE ENGELSİZ) -->
+      <div id="canvas-container">
+        <canvas id="pitch-canvas" width="1100" height="600"></canvas>
+
+        <!-- GERİ SAYIM ANİMASYONU -->
+        <div id="countdown-overlay" class="hidden">
+          <div id="countdown-number">3</div>
+        </div>
+
+        <!-- GOL KUTLAMA EKRANI -->
+        <div id="goal-banner" class="hidden">
+          <div class="goal-text">⚽ GOOOOL!</div>
+          <div class="scorer-box">
+            <span class="scorer-label">GOLÜ ATAN:</span>
+            <div class="scorer-name" id="goal-scorer">Oyuncu</div>
+          </div>
+        </div>
+
+        <!-- MAÇ BİTTİ EKRANI -->
+        <div id="game-over-banner" class="hidden">
+          <div class="trophy-icon">🏆</div>
+          <div class="winner-title" id="winner-text">KIRMIZI TAKIM KAZANDI!</div>
+          <div class="final-score" id="final-score-text">3 - 1</div>
+          <button id="btn-play-again" class="glow-btn">YENİDEN OYNA</button>
+        </div>
+
+        <!-- MOBİL DOKUNMATİK KONTROLLER -->
+        <div id="touch-controls" class="hidden">
+          <div id="joystick-zone">
+            <div id="joystick-knob"></div>
+          </div>
+          <button id="touch-kick-btn">ŞUT</button>
+        </div>
+      </div>
+
+      <!-- ALT KONTROL VE LOBİ ÇUBUĞU -->
+      <footer id="footer-bar">
+        <!-- Takım Seçim Butonları -->
+        <div class="team-selector-group">
+          <button id="btn-join-red" class="team-btn red">
+            <span class="btn-indicator">🔴</span>
+            <span class="btn-label">Kırmızı</span>
+            <span class="team-count" id="count-red">(0)</span>
+          </button>
+
+          <button id="btn-join-spec" class="team-btn spec active">
+            <span class="btn-indicator">👀</span>
+            <span class="btn-label">İzleyici</span>
+            <span class="team-count" id="count-spec">(0)</span>
+          </button>
+
+          <button id="btn-join-blue" class="team-btn blue">
+            <span class="btn-indicator">🔵</span>
+            <span class="btn-label">Mavi</span>
+            <span class="team-count" id="count-blue">(0)</span>
+          </button>
+        </div>
+
+        <!-- Maç Kontrolleri -->
+        <div class="match-controls-group">
+          <button id="btn-start-match" class="action-btn primary">▶ Başlat</button>
+          <button id="btn-reset-match" class="action-btn secondary">🔄 Sıfırla</button>
+          <button id="btn-toggle-bots" class="action-btn bot-btn active" title="Akıllı Botları Aç/Kapat">🤖 Botlar: Açık</button>
+          <button id="btn-settings" class="action-btn icon-only" title="Ayarlar">⚙️</button>
+          <button id="btn-sound-toggle" class="action-btn icon-only" title="Ses Aç/Kapat">🔊</button>
+        </div>
+
+        <!-- Profil ve Ağ Bilgisi -->
+        <div class="network-info-group">
+          <div class="player-tag-pill" id="player-profile-btn" title="İsmini ve ELO'nu İncele">
+            <span class="user-icon">👤</span>
+            <span id="current-name-display">Misafir</span>
+            <span class="elo-badge-small" id="current-elo-badge">1000 ELO</span>
+          </div>
+          <div class="ip-pill" id="copy-ip-btn" title="Arkadaşına Bağlantıyı Gönder (Tıkla ve Kopyala)">
+            <span class="lan-dot"></span>
+            <span id="ip-address-display">localhost:3000</span>
+            <span class="copy-hint">📋</span>
+          </div>
+        </div>
+      </footer>
+
+      <!-- KILAVUZ METNİ -->
+      <div id="controls-hint">
+        <span>[W,A,S,D] / [Yön Tuşları] <b>Hareket</b></span>
+        <span class="sep">•</span>
+        <span>[BOŞLUK] / [X] <b>Şut & Pas</b></span>
+        <span class="sep">•</span>
+        <span>[ENTER] <b>Sohbet Yaz</b></span>
+        <span class="sep">•</span>
+        <span class="bot-hint-tag">🤖 Takımlar botlarla otomatik dengelenir</span>
+      </div>
+    </main>
+
+    <!-- SAĞ: AYRI SOHBET, PARTİ VE ELO SIRALAMA PANELİ (SAHANIN TAM DIŞINDA) -->
+    <aside id="sidebar-panel">
+      <!-- Sekme Başlıkları -->
+      <div class="sidebar-tabs">
+        <button class="tab-btn active" data-tab="tab-chat">💬 Sohbet</button>
+        <button class="tab-btn" data-tab="tab-party">👥 Parti</button>
+        <button class="tab-btn" data-tab="tab-leaderboard">🏆 ELO / Sıralama</button>
+      </div>
+
+      <!-- SEKME 1: SOHBET (DIŞ PANELDE TEMİZ VE GENİŞ) -->
+      <section id="tab-chat" class="tab-pane active">
+        <div id="chat-messages-container">
+          <div id="chat-messages"></div>
+        </div>
+        <form id="chat-form">
+          <input type="text" id="chat-input" placeholder="Bir mesaj yazın..." maxlength="120" autocomplete="off">
+          <button type="submit" id="chat-send-btn">Gönder</button>
+        </form>
+      </section>
+
+      <!-- SEKME 2: PARTİ (GRUP) SİSTEMİ -->
+      <section id="tab-party" class="tab-pane">
+        <!-- Parti Yokken Görünen Kartlar -->
+        <div id="no-party-view">
+          <div class="party-box">
+            <h4>🎉 Yeni Parti Kur</h4>
+            <p>Arkadaşlarınla takım kur, tek tıkla beraber aynı takıma geçin!</p>
+            <div class="party-action-row">
+              <input type="text" id="create-party-name" placeholder="Parti Adı (Örn: Kaplanlar)" maxlength="14">
+              <button id="btn-create-party" class="party-btn primary">Kur</button>
+            </div>
+          </div>
+
+          <div class="party-box">
+            <h4>🔑 Partiye Katıl</h4>
+            <p>Arkadaşının verdiği 4 haneli parti kodunu gir:</p>
+            <div class="party-action-row">
+              <input type="text" id="join-party-code" placeholder="Örn: H7B2" maxlength="6" style="text-transform:uppercase;">
+              <button id="btn-join-party" class="party-btn secondary">Katıl</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aktif Parti Paneli -->
+        <div id="active-party-view" class="hidden">
+          <div class="party-header-card">
+            <div class="party-title-row">
+              <span class="party-badge">PARTİ</span>
+              <h3 id="party-display-name">Aslanlar</h3>
+            </div>
+            <div class="party-code-pill" id="btn-copy-party-code" title="Kodu Kopyala">
+              <span>KOD: <b id="party-code-text">ABCD</b></span>
+              <span class="copy-icon">📋</span>
+            </div>
+          </div>
+
+          <div class="party-members-list">
+            <h5>Parti Üyeleri:</h5>
+            <ul id="party-members-ul"></ul>
+          </div>
+
+          <div class="party-team-actions" id="party-leader-controls">
+            <h5>Lider: Toplu Takım Hareketi</h5>
+            <div class="btn-group-party">
+              <button id="btn-party-move-red" class="party-team-btn red">🔴 Hep Beraber Kırmızıya</button>
+              <button id="btn-party-move-blue" class="party-team-btn blue">🔵 Hep Beraber Maviye</button>
+            </div>
+          </div>
+
+          <button id="btn-leave-party" class="leave-party-btn">Partiden Ayrıl</button>
+        </div>
+      </section>
+
+      <!-- SEKME 3: ELO SİSTEMİ VE SIRALAMA TABLOSU -->
+      <section id="tab-leaderboard" class="tab-pane">
+        <!-- Oyuncunun Kendi ELO Kartı -->
+        <div class="my-elo-card">
+          <div class="elo-header">
+            <span class="rank-tier-icon" id="my-tier-icon">🥈</span>
+            <div>
+              <div class="my-rank-tier" id="my-tier-text">GÜMÜŞ KADEME</div>
+              <div class="my-elo-points"><span id="my-elo-val">1000</span> <small>ELO</small></div>
+            </div>
+          </div>
+          <div class="elo-stats-bar">
+            <div class="elo-stat-item">
+              <span class="stat-lbl">Galibiyet</span>
+              <span class="stat-val win" id="my-wins-count">0</span>
+            </div>
+            <div class="elo-stat-item">
+              <span class="stat-lbl">Mağlubiyet</span>
+              <span class="stat-val loss" id="my-loss-count">0</span>
+            </div>
+            <div class="elo-stat-item">
+              <span class="stat-lbl">Goller</span>
+              <span class="stat-val goal" id="my-goals-count">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Liderlik Tablosu -->
+        <div class="leaderboard-header">
+          <h4>🏆 En İyiler Sıralaması</h4>
+        </div>
+        <div class="leaderboard-table-wrapper">
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Oyuncu</th>
+                <th>ELO</th>
+                <th>G/M</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-body">
+              <tr><td colspan="4" style="text-align:center;">Yükleniyor...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </aside>
+
+  </div>
+
+  <!-- İSİM SEÇİM MODALI (GİRİŞTE AÇILIR) -->
+  <div id="name-modal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <button class="close-modal-btn hidden" id="close-name-modal" type="button">✕</button>
+        <div class="modal-icon">⚽</div>
+        <h2>HAXBALL PRO ARENA</h2>
+        <p>Hemen sahaya çıkmak için oyuncu adını belirle!</p>
+      </div>
+
+      <form id="name-form">
+        <div class="input-wrapper">
+          <label for="nickname-input">Takma Adın (Nickname)</label>
+          <input type="text" id="nickname-input" placeholder="Örn: Toprak, Ronaldo7, Efsane..." maxlength="14" required autofocus autocomplete="off">
+        </div>
+
+        <div class="team-choice-preview">
+          <label>İlk Tercih Ettiğin Takım:</label>
+          <div class="team-radio-group">
+            <label class="radio-card red">
+              <input type="radio" name="init-team" value="red">
+              <span class="radio-box">🔴 Kırmızı</span>
+            </label>
+            <label class="radio-card spec active">
+              <input type="radio" name="init-team" value="spec" checked>
+              <span class="radio-box">👀 İzleyici</span>
+            </label>
+            <label class="radio-card blue">
+              <input type="radio" name="init-team" value="blue">
+              <span class="radio-box">🔵 Mavi</span>
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn glow-btn">ARENAYA GİRİŞ YAP</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- AYARLAR MODALI -->
+  <div id="settings-modal" class="modal-backdrop hidden">
+    <div class="modal-card mini">
+      <div class="modal-header">
+        <h3>⚙️ Maç & Sunucu Kuralları</h3>
+        <button class="close-modal-btn" id="close-settings">✕</button>
+      </div>
+      <div class="settings-body">
+        <div class="setting-row">
+          <label>Hedef Gol Sayısı:</label>
+          <select id="score-limit-select">
+            <option value="1">1 Gol (Altın Gol)</option>
+            <option value="3" selected>3 Gol</option>
+            <option value="5">5 Gol</option>
+            <option value="7">7 Gol</option>
+            <option value="0">Limitsiz</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <label>Maç Süresi:</label>
+          <select id="time-limit-select">
+            <option value="60">1 Dakika</option>
+            <option value="180" selected>3 Dakika</option>
+            <option value="300">5 Dakika</option>
+            <option value="600">10 Dakika</option>
+            <option value="0">Limitsiz</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <label>🤖 Akıllı Bot Dengeleme:</label>
+          <input type="checkbox" id="auto-bots-check" checked style="width:20px; height:20px; cursor:pointer;">
+        </div>
+        <button id="btn-save-settings" class="submit-btn">KAYDET VE UYGULA</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
